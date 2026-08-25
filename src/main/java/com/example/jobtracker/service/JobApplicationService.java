@@ -1,0 +1,44 @@
+package com.example.jobtracker.service;
+
+import com.example.jobtracker.persistence.entity.JobApplication;
+import com.example.jobtracker.controller.dto.CreateJobApplicationRequest;
+import com.example.jobtracker.controller.dto.JobApplicationResponse;
+import com.example.jobtracker.persistence.JobApplicationRepository;
+import org.springframework.http.HttpStatus;
+import org.springframework.stereotype.Service;
+import org.springframework.web.server.ResponseStatusException;
+
+@Service
+public class JobApplicationService {
+
+    private final JobApplicationRepository repository;
+
+    public JobApplicationService(JobApplicationRepository repository) {
+        this.repository = repository;
+    }
+
+    public JobApplicationResponse create(CreateJobApplicationRequest request) {
+        JobApplication jobApplication = new JobApplication(
+                null,
+                request.company(),
+                request.position(),
+                request.appliedDate());
+        JobApplication saved = repository.save(jobApplication);
+        return toResponse(saved);
+    }
+
+    public JobApplicationResponse getById(Long id) {
+        JobApplication jobApplication = repository.findById(id)
+                .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND,
+                        "Job application " + id + " not found"));
+        return toResponse(jobApplication);
+    }
+
+    private JobApplicationResponse toResponse(JobApplication jobApplication) {
+        return new JobApplicationResponse(
+                jobApplication.getId(),
+                jobApplication.getCompany(),
+                jobApplication.getPosition(),
+                jobApplication.getAppliedDate());
+    }
+}
