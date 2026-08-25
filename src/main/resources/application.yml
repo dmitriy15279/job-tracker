@@ -1,0 +1,12 @@
+spring:
+  application:
+    name: job-tracker
+  datasource:
+    url: jdbc:postgresql://localhost:5433/job_tracker
+    username: postgres
+    password: postgres
+  jpa:
+    hibernate:
+      ddl-auto: validate
+  flyway:
+    enabled: true
