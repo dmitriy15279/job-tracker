@@ -7,17 +7,9 @@ import jakarta.persistence.GenerationType;
 import jakarta.persistence.Id;
 import jakarta.persistence.Table;
 import java.time.LocalDate;
-import lombok.AllArgsConstructor;
-import lombok.Getter;
-import lombok.NoArgsConstructor;
-import lombok.Setter;
 
 @Entity
 @Table(name = "job_applications")
-@Getter
-@Setter
-@NoArgsConstructor
-@AllArgsConstructor
 public class JobApplication {
 
     @Id
@@ -32,4 +24,46 @@ public class JobApplication {
 
     @Column(name = "applied_date", nullable = false)
     private LocalDate appliedDate;
+
+    public JobApplication() {
+    }
+
+    public JobApplication(Long id, String company, String position, LocalDate appliedDate) {
+        this.id = id;
+        this.company = company;
+        this.position = position;
+        this.appliedDate = appliedDate;
+    }
+
+    public Long getId() {
+        return id;
+    }
+
+    public void setId(Long id) {
+        this.id = id;
+    }
+
+    public String getCompany() {
+        return company;
+    }
+
+    public void setCompany(String company) {
+        this.company = company;
+    }
+
+    public String getPosition() {
+        return position;
+    }
+
+    public void setPosition(String position) {
+        this.position = position;
+    }
+
+    public LocalDate getAppliedDate() {
+        return appliedDate;
+    }
+
+    public void setAppliedDate(LocalDate appliedDate) {
+        this.appliedDate = appliedDate;
+    }
 }
