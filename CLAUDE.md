@@ -51,6 +51,6 @@ Standard layered Spring MVC structure under `com.example.jobtracker`:
 
 - `controller/` — `@RestController` classes; request/response DTOs live in `controller/dto/` as Java records. Controllers validate input (`@Valid`) and delegate all logic to services — no business logic in controllers.
 - `service/` — business logic; converts between entities and DTOs (`toResponse` mapping done manually, not with a mapping library). Not-found cases are signaled via `ResponseStatusException(HttpStatus.NOT_FOUND, ...)` rather than custom exception classes.
-- `persistence/` — Spring Data JPA repositories (`JpaRepository` interfaces); `persistence/entity/` holds `@Entity` classes with hand-written getters/setters/constructors (no Lombok).
+- `persistence/` — Spring Data JPA repositories (`JpaRepository` interfaces); `persistence/entity/` holds `@Entity` classes using Lombok (`@Getter`/`@Setter`/`@NoArgsConstructor`/`@AllArgsConstructor`) instead of hand-written boilerplate.
 
 Request flow: `Controller` → `Service` (business logic + entity/DTO mapping) → `Repository` (JPA) → Postgres. This is a one-endpoint-group-at-a-time codebase currently covering only job applications (`/api/job-applications`); follow the same three-layer pattern (controller/dto, service, persistence/entity) when adding new resource types.
