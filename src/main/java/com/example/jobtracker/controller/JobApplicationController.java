@@ -5,6 +5,7 @@ import com.example.jobtracker.controller.dto.CreateJobApplicationRequest;
 import com.example.jobtracker.controller.dto.JobApplicationResponse;
 import jakarta.validation.Valid;
 import java.net.URI;
+import java.util.List;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
@@ -27,6 +28,11 @@ public class JobApplicationController {
     public ResponseEntity<JobApplicationResponse> create(@Valid @RequestBody CreateJobApplicationRequest request) {
         JobApplicationResponse response = service.create(request);
         return ResponseEntity.created(URI.create("/api/job-applications/" + response.id())).body(response);
+    }
+
+    @GetMapping
+    public List<JobApplicationResponse> getAll() {
+        return service.getAll();
     }
 
     @GetMapping("/{id}")

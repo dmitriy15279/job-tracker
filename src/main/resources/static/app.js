@@ -6,6 +6,9 @@ const createResult = document.getElementById("create-result");
 const lookupForm = document.getElementById("lookup-form");
 const lookupResult = document.getElementById("lookup-result");
 const recentList = document.getElementById("recent-list");
+const loadAllButton = document.getElementById("load-all-button");
+const allResult = document.getElementById("all-result");
+const allList = document.getElementById("all-list");
 
 function showResult(el, kind, html) {
     el.className = "result " + kind;
@@ -125,5 +128,40 @@ lookupForm.addEventListener("submit", async (event) => {
         submitButton.disabled = false;
     }
 });
+
+loadAllButton.addEventListener("click", async () => {
+    loadAllButton.disabled = true;
+    allResult.hidden = true;
+    try {
+        const response = await fetch("/api/job-applications");
+
+        if (!response.ok) {
+            allList.innerHTML = "";
+            showResult(allResult, "error", await extractErrorMessage(response));
+            return;
+        }
+
+        const apps = await response.json();
+        renderAll(apps);
+    } catch (err) {
+        allList.innerHTML = "";
+        showResult(allResult, "error", "Could not reach the server.");
+    } finally {
+        loadAllButton.disabled = false;
+    }
+});
+
+function renderAll(apps) {
+    if (apps.length === 0) {
+        allList.innerHTML = `<li class="empty">No applications yet.</li>`;
+        return;
+    }
+    allList.innerHTML = apps.map(app => `
+        <li>
+            <span>${escapeHtml(app.company)} — ${escapeHtml(app.position)} (${app.appliedDate})</span>
+            <span class="recent-id">#${app.id}</span>
+        </li>
+    `).join("");
+}
 
 renderRecent();

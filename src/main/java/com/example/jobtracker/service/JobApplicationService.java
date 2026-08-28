@@ -4,6 +4,7 @@ import com.example.jobtracker.persistence.entity.JobApplication;
 import com.example.jobtracker.controller.dto.CreateJobApplicationRequest;
 import com.example.jobtracker.controller.dto.JobApplicationResponse;
 import com.example.jobtracker.persistence.JobApplicationRepository;
+import java.util.List;
 import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
 import org.springframework.web.server.ResponseStatusException;
@@ -25,6 +26,12 @@ public class JobApplicationService {
                 request.appliedDate());
         JobApplication saved = repository.save(jobApplication);
         return toResponse(saved);
+    }
+
+    public List<JobApplicationResponse> getAll() {
+        return repository.findAll().stream()
+                .map(this::toResponse)
+                .toList();
     }
 
     public JobApplicationResponse getById(Long id) {
