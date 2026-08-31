@@ -5,10 +5,12 @@ import com.example.jobtracker.controller.dto.CreateJobApplicationRequest;
 import com.example.jobtracker.controller.dto.JobApplicationResponse;
 import com.example.jobtracker.persistence.JobApplicationRepository;
 import java.util.List;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
 import org.springframework.web.server.ResponseStatusException;
 
+@Slf4j
 @Service
 public class JobApplicationService {
 
@@ -25,19 +27,25 @@ public class JobApplicationService {
                 request.position(),
                 request.appliedDate());
         JobApplication saved = repository.save(jobApplication);
+        log.info("Created job application {} for company '{}'", saved.getId(), saved.getCompany());
         return toResponse(saved);
     }
 
     public List<JobApplicationResponse> getAll() {
-        return repository.findAll().stream()
+        List<JobApplicationResponse> responses = repository.findAll().stream()
                 .map(this::toResponse)
                 .toList();
+        log.debug("Fetched {} job applications", responses.size());
+        return responses;
     }
 
     public JobApplicationResponse getById(Long id) {
         JobApplication jobApplication = repository.findById(id)
-                .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND,
-                        "Job application " + id + " not found"));
+                .orElseThrow(() -> {
+                    log.warn("Job application {} not found", id);
+                    return new ResponseStatusException(HttpStatus.NOT_FOUND,
+                            "Job application " + id + " not found");
+                });
         return toResponse(jobApplication);
     }
 
