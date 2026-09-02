@@ -4,6 +4,8 @@ import com.example.jobtracker.persistence.entity.JobApplication;
 import com.example.jobtracker.controller.dto.CreateJobApplicationRequest;
 import com.example.jobtracker.controller.dto.JobApplicationResponse;
 import com.example.jobtracker.persistence.JobApplicationRepository;
+import java.time.Clock;
+import java.time.LocalDate;
 import java.util.List;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.HttpStatus;
@@ -15,12 +17,17 @@ import org.springframework.web.server.ResponseStatusException;
 public class JobApplicationService {
 
     private final JobApplicationRepository repository;
+    private final Clock clock;
 
-    public JobApplicationService(JobApplicationRepository repository) {
+    public JobApplicationService(JobApplicationRepository repository, Clock clock) {
         this.repository = repository;
+        this.clock = clock;
     }
 
     public JobApplicationResponse create(CreateJobApplicationRequest request) {
+        if (request.appliedDate().isAfter(LocalDate.now(clock))) {
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "appliedDate cannot be in the future");
+        }
         JobApplication jobApplication = new JobApplication(
                 null,
                 request.company(),
