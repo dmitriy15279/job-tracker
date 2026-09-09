@@ -1,6 +1,7 @@
 package com.example.jobtracker.service;
 
 import com.example.jobtracker.persistence.entity.JobApplication;
+import com.example.jobtracker.config.CacheConfig;
 import com.example.jobtracker.controller.dto.CreateJobApplicationRequest;
 import com.example.jobtracker.controller.dto.JobApplicationResponse;
 import com.example.jobtracker.persistence.JobApplicationRepository;
@@ -8,6 +9,7 @@ import java.time.Clock;
 import java.time.LocalDate;
 import java.util.List;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.cache.annotation.Cacheable;
 import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
 import org.springframework.web.server.ResponseStatusException;
@@ -46,7 +48,9 @@ public class JobApplicationService {
         return responses;
     }
 
+    @Cacheable(cacheNames = CacheConfig.JOB_APPLICATIONS_CACHE, key = "#id")
     public JobApplicationResponse getById(Long id) {
+        log.info("Cache miss for job application {} - loading from database", id);
         JobApplication jobApplication = repository.findById(id)
                 .orElseThrow(() -> {
                     log.warn("Job application {} not found", id);

@@ -29,10 +29,10 @@ Build tool is Gradle (via wrapper — use `gradlew`/`gradlew.bat`, not a system-
 
 ### Database
 
-The app expects PostgreSQL reachable at the URL in `src/main/resources/application.properties` (`localhost:5433/job_tracker`). Start it with:
+The app expects PostgreSQL reachable at the URL in `src/main/resources/application.yml` (`localhost:5433/job_tracker`). It also expects Redis reachable at `localhost:6380` (used to cache `GET /api/job-applications/{id}` lookups for 30 seconds — see `config/CacheConfig.java`). Start both with:
 
 ```bash
-docker-compose up -d db
+docker-compose up -d db redis
 ```
 
 Schema is managed exclusively through Flyway migrations in `src/main/resources/db/migration/` (`V1__...sql`, `V2__...sql`, ...). Hibernate DDL is set to `validate` (`spring.jpa.hibernate.ddl-auto=validate`) — it never auto-generates schema, so any entity change requires a corresponding new Flyway migration.
