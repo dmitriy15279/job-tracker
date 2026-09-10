@@ -48,7 +48,7 @@ public class JobApplicationService {
         return responses;
     }
 
-    @Cacheable(cacheNames = CacheConfig.JOB_APPLICATIONS_CACHE, key = "#id")
+    @Cacheable(cacheNames = CacheConfig.JOB_APPLICATIONS_CACHE, key = "#id", cacheManager = "redisCacheManager")
     public JobApplicationResponse getById(Long id) {
         log.info("Cache miss for job application {} - loading from database", id);
         JobApplication jobApplication = repository.findById(id)

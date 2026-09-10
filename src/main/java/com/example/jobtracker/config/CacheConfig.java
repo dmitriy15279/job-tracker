@@ -3,13 +3,15 @@ package com.example.jobtracker.config;
 import com.github.benmanes.caffeine.cache.Caffeine;
 import java.time.Duration;
 import lombok.extern.slf4j.Slf4j;
-import org.springframework.boot.cache.autoconfigure.RedisCacheManagerBuilderCustomizer;
 import org.springframework.cache.CacheManager;
 import org.springframework.cache.annotation.EnableCaching;
 import org.springframework.cache.caffeine.CaffeineCacheManager;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
+import org.springframework.context.annotation.Primary;
 import org.springframework.data.redis.cache.RedisCacheConfiguration;
+import org.springframework.data.redis.cache.RedisCacheManager;
+import org.springframework.data.redis.connection.RedisConnectionFactory;
 import org.springframework.data.redis.serializer.GenericJacksonJsonRedisSerializer;
 import org.springframework.data.redis.serializer.RedisSerializationContext;
 import org.springframework.data.redis.serializer.StringRedisSerializer;
@@ -41,8 +43,9 @@ public class CacheConfig {
         return cacheManager;
     }
 
+    @Primary
     @Bean
-    public RedisCacheManagerBuilderCustomizer redisCacheManagerBuilderCustomizer() {
+    public RedisCacheManager redisCacheManager(RedisConnectionFactory connectionFactory) {
         PolymorphicTypeValidator typeValidator = BasicPolymorphicTypeValidator.builder()
                 .allowIfSubType("com.example.jobtracker.")
                 .build();
@@ -54,6 +57,8 @@ public class CacheConfig {
                 .serializeValuesWith(RedisSerializationContext.SerializationPair.fromSerializer(
                         GenericJacksonJsonRedisSerializer.builder().enableDefaultTyping(typeValidator).build()));
 
-        return builder -> builder.withCacheConfiguration(JOB_APPLICATIONS_CACHE, configuration);
+        return RedisCacheManager.builder(connectionFactory)
+                .withCacheConfiguration(JOB_APPLICATIONS_CACHE, configuration)
+                .build();
     }
 }
