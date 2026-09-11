@@ -24,4 +24,4 @@ logging:
     org.springframework.cache: TRACE
     org.springframework.data.redis: DEBUG
   pattern:
-    console: "%d{yyyy-MM-dd HH:mm:ss} %-5level [%thread] %logger{36} - %msg%n"
+    console: "%d{yyyy-MM-dd HH:mm:ss} %-5level [%thread] [traceId=%X{traceId}] %logger{36} - %msg%n"
