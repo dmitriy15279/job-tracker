@@ -1,3 +1,6 @@
+job-tracker:
+  base-url: ${JOB_TRACKER_BASE_URL:http://localhost:${server.port:8080}}
+
 spring:
   application:
     name: job-tracker
@@ -28,6 +31,10 @@ spring:
     producer:
       key-serializer: org.apache.kafka.common.serialization.StringSerializer
       value-serializer: org.springframework.kafka.support.serializer.JacksonJsonSerializer
+    template:
+      observation-enabled: true
+    listener:
+      observation-enabled: true
 
 logging:
   level:
@@ -35,5 +42,3 @@ logging:
     com.example.jobtracker: DEBUG
     org.springframework.cache: TRACE
     org.springframework.data.redis: DEBUG
-  pattern:
-    console: "%d{yyyy-MM-dd HH:mm:ss} %-5level [%thread] [traceId=%X{traceId}] %logger{36} - %msg%n"

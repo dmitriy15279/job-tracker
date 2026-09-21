@@ -4,12 +4,14 @@ import com.example.jobtracker.persistence.entity.JobApplication;
 import com.example.jobtracker.config.CacheConfig;
 import com.example.jobtracker.controller.dto.CreateJobApplicationRequest;
 import com.example.jobtracker.controller.dto.JobApplicationResponse;
+import com.example.jobtracker.controller.dto.PageResponse;
 import com.example.jobtracker.persistence.JobApplicationRepository;
 import java.time.Clock;
 import java.time.LocalDate;
-import java.util.List;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.cache.annotation.Cacheable;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageRequest;
 import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
 import org.springframework.web.server.ResponseStatusException;
@@ -40,12 +42,15 @@ public class JobApplicationService {
         return toResponse(saved);
     }
 
-    public List<JobApplicationResponse> getAll() {
-        List<JobApplicationResponse> responses = repository.findAll().stream()
-                .map(this::toResponse)
-                .toList();
-        log.debug("Fetched {} job applications", responses.size());
-        return responses;
+    public PageResponse<JobApplicationResponse> getAll(int page, int size) {
+        if (page < 0 || size < 1) {
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "page must be >= 0 and size must be >= 1");
+        }
+        Page<JobApplicationResponse> result = repository.findAll(PageRequest.of(page, size))
+                .map(this::toResponse);
+        log.debug("Fetched page {} of {} ({} total job applications)",
+                result.getNumber(), result.getTotalPages(), result.getTotalElements());
+        return PageResponse.from(result);
     }
 
     @Cacheable(cacheNames = CacheConfig.JOB_APPLICATIONS_CACHE, key = "#id", cacheManager = "redisCacheManager")

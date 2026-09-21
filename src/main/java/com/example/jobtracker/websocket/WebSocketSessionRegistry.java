@@ -9,12 +9,7 @@ import org.springframework.stereotype.Component;
 import org.springframework.web.socket.TextMessage;
 import org.springframework.web.socket.WebSocketSession;
 
-/**
- * Tracks which user logins are currently connected via WebSocket.
- * The live {@link WebSocketSession} objects only make sense on the instance that holds them, so they
- * are kept in a local in-memory map; Redis only stores the "is this login online" flag so that a Kafka
- * consumer (potentially on a different instance) can check connectivity before attempting delivery.
- */
+
 @Slf4j
 @Component
 public class WebSocketSessionRegistry {

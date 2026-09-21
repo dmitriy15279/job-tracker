@@ -43,6 +43,9 @@ public class ChatWebSocketHandler extends TextWebSocketHandler {
         if (session.getUri() == null) {
             return null;
         }
-        return UriComponentsBuilder.fromUri(session.getUri()).build().getQueryParams().getFirst("login");
+        return UriComponentsBuilder.fromUri(session.getUri())
+                .build()
+                .getQueryParams()
+                .getFirst("login");
     }
 }
