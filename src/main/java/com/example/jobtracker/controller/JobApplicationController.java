@@ -6,7 +6,9 @@ import com.example.jobtracker.controller.dto.JobApplicationResponse;
 import com.example.jobtracker.controller.dto.PageResponse;
 import jakarta.validation.Valid;
 import java.net.URI;
+import java.time.LocalDate;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.format.annotation.DateTimeFormat;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
@@ -37,9 +39,14 @@ public class JobApplicationController {
     @GetMapping
     public PageResponse<JobApplicationResponse> getAll(
             @RequestParam(defaultValue = "0") int page,
-            @RequestParam(defaultValue = "20") int size) {
-        log.debug("GET /api/job-applications page={} size={}", page, size);
-        return service.getAll(page, size);
+            @RequestParam(defaultValue = "20") int size,
+            @RequestParam(required = false) String company,
+            @RequestParam(required = false) String position,
+            @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate appliedFrom,
+            @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate appliedTo) {
+        log.debug("GET /api/job-applications page={} size={} company={} position={} appliedFrom={} appliedTo={}",
+                page, size, company, position, appliedFrom, appliedTo);
+        return service.getAll(page, size, company, position, appliedFrom, appliedTo);
     }
 
     @GetMapping("/{id}")

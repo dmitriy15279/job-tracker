@@ -43,9 +43,31 @@
 
             <section class="card">
                 <h2>All applications</h2>
-                <button type="button" id="load-all-button">Load all applications</button>
+                <form id="filter-form" class="filter-form">
+                    <label for="filter-company">Company</label>
+                    <input type="text" id="filter-company" name="company" placeholder="e.g. Acme">
+
+                    <label for="filter-position">Position</label>
+                    <input type="text" id="filter-position" name="position" placeholder="e.g. Backend">
+
+                    <label for="filter-applied-from">Applied from</label>
+                    <input type="date" id="filter-applied-from" name="appliedFrom">
+
+                    <label for="filter-applied-to">Applied to</label>
+                    <input type="date" id="filter-applied-to" name="appliedTo">
+
+                    <div class="filter-form-buttons">
+                        <button type="submit">Apply filters</button>
+                        <button type="button" id="clear-filters-button" class="secondary">Clear</button>
+                    </div>
+                </form>
                 <div id="all-result" class="result" hidden></div>
                 <ul id="all-list" class="recent-list"></ul>
+                <div id="all-pagination" class="pagination" hidden>
+                    <button type="button" id="prev-page-button">Previous</button>
+                    <span id="page-indicator"></span>
+                    <button type="button" id="next-page-button">Next</button>
+                </div>
             </section>
 
             <section class="card">

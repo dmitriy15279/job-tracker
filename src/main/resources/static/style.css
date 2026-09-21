@@ -106,6 +106,43 @@ button:disabled {
     cursor: not-allowed;
 }
 
+button.secondary {
+    background: transparent;
+    color: var(--text-muted);
+    border: 1px solid var(--border);
+}
+
+button.secondary:hover {
+    background: var(--bg);
+    color: var(--text);
+}
+
+.filter-form {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 0.5rem 1rem;
+}
+
+.filter-form label {
+    margin-top: 0.25rem;
+}
+
+.filter-form-buttons {
+    grid-column: 1 / -1;
+    display: flex;
+    gap: 0.75rem;
+}
+
+.filter-form-buttons button {
+    margin-top: 0.5rem;
+}
+
+@media (max-width: 480px) {
+    .filter-form {
+        grid-template-columns: 1fr;
+    }
+}
+
 .result {
     margin-top: 1rem;
     padding: 0.75rem 0.9rem;
@@ -168,4 +205,26 @@ button:disabled {
 .recent-list .recent-id {
     color: var(--text-muted);
     font-variant-numeric: tabular-nums;
+}
+
+.pagination[hidden] {
+    display: none;
+}
+
+.pagination {
+    margin-top: 1rem;
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+}
+
+.pagination button {
+    margin-top: 0;
+    padding: 0.4rem 0.9rem;
+    font-size: 0.85rem;
+}
+
+.pagination #page-indicator {
+    font-size: 0.85rem;
+    color: var(--text-muted);
 }
