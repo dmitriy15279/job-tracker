@@ -1,5 +1,6 @@
 package com.example.jobtracker.service;
 
+import com.example.jobtracker.config.JobTrackerProperties;
 import com.example.jobtracker.controller.dto.CreateJobApplicationRequest;
 import com.example.jobtracker.controller.dto.JobApplicationResponse;
 import com.example.jobtracker.controller.dto.SeedJobApplicationsResponse;
@@ -7,8 +8,8 @@ import java.time.Clock;
 import java.time.LocalDate;
 import java.util.List;
 import java.util.concurrent.ThreadLocalRandom;
+import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
-import org.springframework.beans.factory.annotation.Value;
 import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
 import org.springframework.web.client.RestClientException;
@@ -17,6 +18,7 @@ import org.springframework.web.server.ResponseStatusException;
 
 @Slf4j
 @Service
+@RequiredArgsConstructor
 public class JobApplicationSeederService {
 
     private static final int MAX_SEED_COUNT = 10_000;
@@ -31,16 +33,7 @@ public class JobApplicationSeederService {
 
     private final RestTemplate restTemplate;
     private final Clock clock;
-    private final String baseUrl;
-
-    public JobApplicationSeederService(
-            RestTemplate restTemplate,
-            Clock clock,
-            @Value("${job-tracker.base-url}") String baseUrl) {
-        this.restTemplate = restTemplate;
-        this.clock = clock;
-        this.baseUrl = baseUrl;
-    }
+    private final JobTrackerProperties properties;
 
     public SeedJobApplicationsResponse seed(int count) {
         if (count < 1 || count > MAX_SEED_COUNT) {
@@ -50,7 +43,7 @@ public class JobApplicationSeederService {
 
         int created = 0;
         int failed = 0;
-        String createUrl = baseUrl + "/api/job-applications";
+        String createUrl = properties.baseUrl() + "/api/job-applications";
 
         for (int i = 0; i < count; i++) {
             CreateJobApplicationRequest request = randomRequest();

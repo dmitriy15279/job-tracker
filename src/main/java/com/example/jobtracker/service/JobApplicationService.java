@@ -9,6 +9,8 @@ import com.example.jobtracker.persistence.JobApplicationRepository;
 import com.example.jobtracker.persistence.JobApplicationSpecifications;
 import java.time.Clock;
 import java.time.LocalDate;
+
+import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.cache.annotation.Cacheable;
 import org.springframework.data.domain.Page;
@@ -20,15 +22,11 @@ import org.springframework.web.server.ResponseStatusException;
 
 @Slf4j
 @Service
+@RequiredArgsConstructor
 public class JobApplicationService {
 
     private final JobApplicationRepository repository;
     private final Clock clock;
-
-    public JobApplicationService(JobApplicationRepository repository, Clock clock) {
-        this.repository = repository;
-        this.clock = clock;
-    }
 
     public JobApplicationResponse create(CreateJobApplicationRequest request) {
         if (request.appliedDate().isAfter(LocalDate.now(clock))) {
