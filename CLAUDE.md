@@ -53,7 +53,11 @@ Standard layered Spring MVC structure under `com.example.jobtracker`:
 - `service/` — business logic; converts between entities and DTOs (`toResponse` mapping done manually, not with a mapping library). Not-found cases are signaled via `ResponseStatusException(HttpStatus.NOT_FOUND, ...)` rather than custom exception classes.
 - `persistence/` — Spring Data JPA repositories (`JpaRepository` interfaces); `persistence/entity/` holds `@Entity` classes using Lombok (`@Getter`/`@Setter`/`@NoArgsConstructor`/`@AllArgsConstructor`) instead of hand-written boilerplate.
 
-Request flow: `Controller` → `Service` (business logic + entity/DTO mapping) → `Repository` (JPA) → Postgres. This is a one-endpoint-group-at-a-time codebase currently covering only job applications (`/api/job-applications`); follow the same three-layer pattern (controller/dto, service, persistence/entity) when adding new resource types.
+Request flow: `Controller` → `Service` (business logic + entity/DTO mapping) → `Repository` (JPA) → Postgres. Resources: job applications (`/api/job-applications`), users (`/api/users`) and companies (`/api/companies`); follow the same three-layer pattern (controller/dto, service, persistence/entity) when adding new resource types.
+
+### Users and companies
+
+`User` ↔ `Company` is many-to-many through the `user_companies` join table (`User` owns the `@ManyToMany`; `Company` has no back-reference). Business rules enforced in the services, not the DB: a `BUSINESS` user must have at least one company, an `INDIVIDUAL` user none; a company that is some business user's only company cannot be deleted (409). User email and company name are unique case-insensitively (`lower(...)` unique indexes). Users and companies are not linked to job applications. Neither resource is exposed through the gateway yet.
 
 ### Related service: job-tracker-gateway
 
