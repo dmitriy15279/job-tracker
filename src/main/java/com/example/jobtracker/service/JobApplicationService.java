@@ -25,6 +25,8 @@ import org.springframework.web.server.ResponseStatusException;
 @RequiredArgsConstructor
 public class JobApplicationService {
 
+    private static final int MAX_PAGE_SIZE = 100;
+
     private final JobApplicationRepository repository;
     private final Clock clock;
 
@@ -44,8 +46,9 @@ public class JobApplicationService {
 
     public PageResponse<JobApplicationResponse> getAll(
             int page, int size, String company, String position, LocalDate appliedFrom, LocalDate appliedTo) {
-        if (page < 0 || size < 1) {
-            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "page must be >= 0 and size must be >= 1");
+        if (page < 0 || size < 1 || size > MAX_PAGE_SIZE) {
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST,
+                    "page must be >= 0 and size must be between 1 and " + MAX_PAGE_SIZE);
         }
         if (appliedFrom != null && appliedTo != null && appliedFrom.isAfter(appliedTo)) {
             throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "appliedFrom cannot be after appliedTo");
