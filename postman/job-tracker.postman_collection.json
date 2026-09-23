@@ -1,0 +1,1260 @@
+{
+  "info": {
+    "_postman_id": "cec439c3-6369-4ea9-83c9-4ae187d874aa",
+    "name": "Job Tracker",
+    "description": "End-to-end checks for job-tracker (:8080) and job-tracker-gateway (:8081).\nStart the stack with `docker-compose up -d`, select the \"Job Tracker local\" environment and use Run collection.\nRequests create test data (companies prefixed with \"Postman-<timestamp>\" plus random seeded rows).\nNot covered here (see folder descriptions): WebSocket delivery and the 503 when job-tracker is down.",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+  },
+  "item": [
+    {
+      "name": "0. Health",
+      "description": "Both services must be UP before running the rest.",
+      "item": [
+        {
+          "name": "Gateway health",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{gateway}}/actuator/health",
+              "host": [
+                "{{gateway}}"
+              ],
+              "path": [
+                "actuator",
+                "health"
+              ]
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"200 OK\", () => pm.response.to.have.status(200));",
+                  "pm.test(\"status UP\", () => pm.expect(pm.response.json().status).to.eql(\"UP\"));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "job-tracker health",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{tracker}}/actuator/health",
+              "host": [
+                "{{tracker}}"
+              ],
+              "path": [
+                "actuator",
+                "health"
+              ]
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"200 OK\", () => pm.response.to.have.status(200));",
+                  "pm.test(\"status UP\", () => pm.expect(pm.response.json().status).to.eql(\"UP\"));"
+                ]
+              }
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "name": "1. Gateway: create and get by id",
+      "description": "Single application is created through the gateway and validated by job-tracker.",
+      "item": [
+        {
+          "name": "Create application",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{gateway}}/api/job-applications",
+              "host": [
+                "{{gateway}}"
+              ],
+              "path": [
+                "api",
+                "job-applications"
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"company\": \"{{runTag}} Alpha\",\n  \"position\": \"Backend Developer\",\n  \"appliedDate\": \"{{pastDate}}\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "event": [
+            {
+              "listen": "prerequest",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "// Unique tag per run so the filter checks below see only this run's data",
+                  "  pm.collectionVariables.set(\"runTag\", \"Postman-\" + Date.now());",
+                  "  const d = new Date(); d.setDate(d.getDate() - 5);",
+                  "  pm.collectionVariables.set(\"pastDate\", d.toISOString().slice(0, 10));",
+                  "  const f = new Date(); f.setDate(f.getDate() + 5);",
+                  "  pm.collectionVariables.set(\"futureDate\", f.toISOString().slice(0, 10));"
+                ]
+              }
+            },
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"201 Created\", () => pm.response.to.have.status(201));",
+                  "  const body = pm.response.json();",
+                  "  pm.test(\"has numeric id\", () => pm.expect(body.id).to.be.a(\"number\"));",
+                  "  pm.test(\"Location header points to the new id\", () =>",
+                  "      pm.expect(pm.response.headers.get(\"Location\")).to.eql(\"/api/job-applications/\" + body.id));",
+                  "  pm.test(\"echoes fields\", () => {",
+                  "      pm.expect(body.company).to.eql(pm.collectionVariables.get(\"runTag\") + \" Alpha\");",
+                  "      pm.expect(body.appliedDate).to.eql(pm.collectionVariables.get(\"pastDate\"));",
+                  "  });",
+                  "  pm.collectionVariables.set(\"createdId\", body.id);"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Create second application (for filters)",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{gateway}}/api/job-applications",
+              "host": [
+                "{{gateway}}"
+              ],
+              "path": [
+                "api",
+                "job-applications"
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"company\": \"{{runTag}} beta\",\n  \"position\": \"QA Engineer\",\n  \"appliedDate\": \"{{pastDate}}\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"201 Created\", () => pm.response.to.have.status(201));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Get by id",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{gateway}}/api/job-applications/{{createdId}}",
+              "host": [
+                "{{gateway}}"
+              ],
+              "path": [
+                "api",
+                "job-applications",
+                "{{createdId}}"
+              ]
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"200 OK\", () => pm.response.to.have.status(200));",
+                  "pm.test(\"same application\", () => pm.expect(pm.response.json().id).to.eql(Number(pm.collectionVariables.get(\"createdId\"))));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Get by id: not found",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{gateway}}/api/job-applications/999999999",
+              "host": [
+                "{{gateway}}"
+              ],
+              "path": [
+                "api",
+                "job-applications",
+                "999999999"
+              ]
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"404 Not Found\", () => pm.response.to.have.status(404));",
+                  "pm.test(\"message: not found\", () => pm.expect(pm.response.json().message).to.include(\"not found\"));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Get by id: non-numeric",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{gateway}}/api/job-applications/abc",
+              "host": [
+                "{{gateway}}"
+              ],
+              "path": [
+                "api",
+                "job-applications",
+                "abc"
+              ]
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"400 Bad Request\", () => pm.response.to.have.status(400));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Create: future date",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{gateway}}/api/job-applications",
+              "host": [
+                "{{gateway}}"
+              ],
+              "path": [
+                "api",
+                "job-applications"
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"company\": \"Future Inc\",\n  \"position\": \"QA\",\n  \"appliedDate\": \"{{futureDate}}\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"400 Bad Request\", () => pm.response.to.have.status(400));",
+                  "  pm.test(\"message: appliedDate cannot be in the future\", () => pm.expect(pm.response.json().message).to.include(\"appliedDate cannot be in the future\"));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Create: blank company",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{gateway}}/api/job-applications",
+              "host": [
+                "{{gateway}}"
+              ],
+              "path": [
+                "api",
+                "job-applications"
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"company\": \"\",\n  \"position\": \"QA\",\n  \"appliedDate\": \"{{pastDate}}\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"400 Bad Request\", () => pm.response.to.have.status(400));",
+                  "  pm.test(\"field error for company\", () => {",
+                  "      const err = pm.response.json().errors.find(e => e.field === \"company\");",
+                  "      pm.expect(err.defaultMessage).to.eql(\"must not be blank\");",
+                  "  });"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Create: missing appliedDate",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{gateway}}/api/job-applications",
+              "host": [
+                "{{gateway}}"
+              ],
+              "path": [
+                "api",
+                "job-applications"
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"company\": \"X\",\n  \"position\": \"QA\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"400 Bad Request\", () => pm.response.to.have.status(400));",
+                  "  pm.test(\"field error for appliedDate\", () =>",
+                  "      pm.expect(pm.response.json().errors.map(e => e.field)).to.include(\"appliedDate\"));"
+                ]
+              }
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "name": "2. Gateway: list, pagination, filters",
+      "description": "Filtering and pagination run in job-tracker; the gateway forwards the parameters.",
+      "item": [
+        {
+          "name": "List: defaults",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{gateway}}/api/job-applications",
+              "host": [
+                "{{gateway}}"
+              ],
+              "path": [
+                "api",
+                "job-applications"
+              ]
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"200 OK\", () => pm.response.to.have.status(200));",
+                  "const b = pm.response.json();",
+                  "pm.test(\"page 0, size 20\", () => { pm.expect(b.page).to.eql(0); pm.expect(b.size).to.eql(20); });",
+                  "pm.test(\"content not larger than size\", () => pm.expect(b.content.length).to.be.at.most(20));",
+                  "pm.test(\"totalPages consistent\", () => pm.expect(b.totalPages).to.eql(Math.ceil(b.totalElements / 20)));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "List: page 1, size 5",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{gateway}}/api/job-applications?page=1&size=5",
+              "host": [
+                "{{gateway}}"
+              ],
+              "path": [
+                "api",
+                "job-applications"
+              ],
+              "query": [
+                {
+                  "key": "page",
+                  "value": "1"
+                },
+                {
+                  "key": "size",
+                  "value": "5"
+                }
+              ]
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"200 OK\", () => pm.response.to.have.status(200));",
+                  "const b = pm.response.json();",
+                  "pm.test(\"page 1, size 5\", () => { pm.expect(b.page).to.eql(1); pm.expect(b.size).to.eql(5); });",
+                  "pm.test(\"at most 5 items\", () => pm.expect(b.content.length).to.be.at.most(5));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Filter: company (this run)",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{gateway}}/api/job-applications?company={{runTag}}",
+              "host": [
+                "{{gateway}}"
+              ],
+              "path": [
+                "api",
+                "job-applications"
+              ],
+              "query": [
+                {
+                  "key": "company",
+                  "value": "{{runTag}}"
+                }
+              ]
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"200 OK\", () => pm.response.to.have.status(200));",
+                  "pm.test(\"exactly the 2 applications of this run\", () => pm.expect(pm.response.json().totalElements).to.eql(2));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Filter: company is case-insensitive",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{gateway}}/api/job-applications?company={{runTag}} ALPHA",
+              "host": [
+                "{{gateway}}"
+              ],
+              "path": [
+                "api",
+                "job-applications"
+              ],
+              "query": [
+                {
+                  "key": "company",
+                  "value": "{{runTag}} ALPHA"
+                }
+              ]
+            }
+          },
+          "event": [
+            {
+              "listen": "prerequest",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "// lower-case the tag to prove case-insensitivity",
+                  "  pm.variables.set(\"runTag\", pm.collectionVariables.get(\"runTag\").toLowerCase());"
+                ]
+              }
+            },
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"200 OK\", () => pm.response.to.have.status(200));",
+                  "  pm.test(\"finds the Alpha application\", () => {",
+                  "      const b = pm.response.json();",
+                  "      pm.expect(b.totalElements).to.eql(1);",
+                  "      pm.expect(b.content[0].id).to.eql(Number(pm.collectionVariables.get(\"createdId\")));",
+                  "  });"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Filter: company + position",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{gateway}}/api/job-applications?company={{runTag}}&position=engineer",
+              "host": [
+                "{{gateway}}"
+              ],
+              "path": [
+                "api",
+                "job-applications"
+              ],
+              "query": [
+                {
+                  "key": "company",
+                  "value": "{{runTag}}"
+                },
+                {
+                  "key": "position",
+                  "value": "engineer"
+                }
+              ]
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"200 OK\", () => pm.response.to.have.status(200));",
+                  "pm.test(\"only the QA Engineer\", () => {",
+                  "    const b = pm.response.json();",
+                  "    pm.expect(b.totalElements).to.eql(1);",
+                  "    pm.expect(b.content[0].position).to.eql(\"QA Engineer\");",
+                  "});"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Filter: date range (inclusive)",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{gateway}}/api/job-applications?company={{runTag}}&appliedFrom={{pastDate}}&appliedTo={{pastDate}}",
+              "host": [
+                "{{gateway}}"
+              ],
+              "path": [
+                "api",
+                "job-applications"
+              ],
+              "query": [
+                {
+                  "key": "company",
+                  "value": "{{runTag}}"
+                },
+                {
+                  "key": "appliedFrom",
+                  "value": "{{pastDate}}"
+                },
+                {
+                  "key": "appliedTo",
+                  "value": "{{pastDate}}"
+                }
+              ]
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"200 OK\", () => pm.response.to.have.status(200));",
+                  "pm.test(\"both applications on the boundary date\", () => pm.expect(pm.response.json().totalElements).to.eql(2));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Filter: no matches",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{gateway}}/api/job-applications?company=no-such-company-{{runTag}}",
+              "host": [
+                "{{gateway}}"
+              ],
+              "path": [
+                "api",
+                "job-applications"
+              ],
+              "query": [
+                {
+                  "key": "company",
+                  "value": "no-such-company-{{runTag}}"
+                }
+              ]
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"200 OK\", () => pm.response.to.have.status(200));",
+                  "pm.test(\"empty page\", () => {",
+                  "    const b = pm.response.json();",
+                  "    pm.expect(b.content).to.be.empty;",
+                  "    pm.expect(b.totalElements).to.eql(0);",
+                  "});"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Error: appliedFrom after appliedTo",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{gateway}}/api/job-applications?appliedFrom=2026-09-10&appliedTo=2026-09-01",
+              "host": [
+                "{{gateway}}"
+              ],
+              "path": [
+                "api",
+                "job-applications"
+              ],
+              "query": [
+                {
+                  "key": "appliedFrom",
+                  "value": "2026-09-10"
+                },
+                {
+                  "key": "appliedTo",
+                  "value": "2026-09-01"
+                }
+              ]
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"400 Bad Request\", () => pm.response.to.have.status(400));",
+                  "pm.test(\"message: appliedFrom cannot be after appliedTo\", () => pm.expect(pm.response.json().message).to.include(\"appliedFrom cannot be after appliedTo\"));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Error: size above 100",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{gateway}}/api/job-applications?size=101",
+              "host": [
+                "{{gateway}}"
+              ],
+              "path": [
+                "api",
+                "job-applications"
+              ],
+              "query": [
+                {
+                  "key": "size",
+                  "value": "101"
+                }
+              ]
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"400 Bad Request\", () => pm.response.to.have.status(400));",
+                  "pm.test(\"message: size must be between 1 and 100\", () => pm.expect(pm.response.json().message).to.include(\"size must be between 1 and 100\"));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Error: negative page",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{gateway}}/api/job-applications?page=-1",
+              "host": [
+                "{{gateway}}"
+              ],
+              "path": [
+                "api",
+                "job-applications"
+              ],
+              "query": [
+                {
+                  "key": "page",
+                  "value": "-1"
+                }
+              ]
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"400 Bad Request\", () => pm.response.to.have.status(400));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Error: non-ISO date",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{gateway}}/api/job-applications?appliedFrom=01.01.2026",
+              "host": [
+                "{{gateway}}"
+              ],
+              "path": [
+                "api",
+                "job-applications"
+              ],
+              "query": [
+                {
+                  "key": "appliedFrom",
+                  "value": "01.01.2026"
+                }
+              ]
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"400 Bad Request\", () => pm.response.to.have.status(400));"
+                ]
+              }
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "name": "3. Gateway: seeding",
+      "description": "Random applications are created one by one through job-tracker.\nTo see the 503: `docker-compose stop app`, send \"Seed 20\", then `docker-compose start app`.",
+      "item": [
+        {
+          "name": "Total before seeding",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{gateway}}/api/job-applications?size=1",
+              "host": [
+                "{{gateway}}"
+              ],
+              "path": [
+                "api",
+                "job-applications"
+              ],
+              "query": [
+                {
+                  "key": "size",
+                  "value": "1"
+                }
+              ]
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"200 OK\", () => pm.response.to.have.status(200));",
+                  "pm.collectionVariables.set(\"totalBefore\", pm.response.json().totalElements);"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Seed 20",
+          "request": {
+            "method": "POST",
+            "header": [],
+            "url": {
+              "raw": "{{gateway}}/api/job-applications/seed?count=20",
+              "host": [
+                "{{gateway}}"
+              ],
+              "path": [
+                "api",
+                "job-applications",
+                "seed"
+              ],
+              "query": [
+                {
+                  "key": "count",
+                  "value": "20"
+                }
+              ]
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"200 OK\", () => pm.response.to.have.status(200));",
+                  "pm.test(\"20 created, 0 failed\", () =>",
+                  "    pm.expect(pm.response.json()).to.eql({ requestedCount: 20, createdCount: 20, failedCount: 0 }));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Seed without count (default 10)",
+          "request": {
+            "method": "POST",
+            "header": [],
+            "url": {
+              "raw": "{{gateway}}/api/job-applications/seed",
+              "host": [
+                "{{gateway}}"
+              ],
+              "path": [
+                "api",
+                "job-applications",
+                "seed"
+              ]
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"200 OK\", () => pm.response.to.have.status(200));",
+                  "pm.test(\"10 created\", () => pm.expect(pm.response.json().createdCount).to.eql(10));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Total grew by 30",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{gateway}}/api/job-applications?size=1",
+              "host": [
+                "{{gateway}}"
+              ],
+              "path": [
+                "api",
+                "job-applications"
+              ],
+              "query": [
+                {
+                  "key": "size",
+                  "value": "1"
+                }
+              ]
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"200 OK\", () => pm.response.to.have.status(200));",
+                  "pm.test(\"30 more applications\", () =>",
+                  "    pm.expect(pm.response.json().totalElements - Number(pm.collectionVariables.get(\"totalBefore\"))).to.eql(30));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Error: count=0",
+          "request": {
+            "method": "POST",
+            "header": [],
+            "url": {
+              "raw": "{{gateway}}/api/job-applications/seed?count=0",
+              "host": [
+                "{{gateway}}"
+              ],
+              "path": [
+                "api",
+                "job-applications",
+                "seed"
+              ],
+              "query": [
+                {
+                  "key": "count",
+                  "value": "0"
+                }
+              ]
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"400 Bad Request\", () => pm.response.to.have.status(400));",
+                  "pm.test(\"message: count must be between 1 and 10000\", () => pm.expect(pm.response.json().message).to.include(\"count must be between 1 and 10000\"));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Error: count=10001",
+          "request": {
+            "method": "POST",
+            "header": [],
+            "url": {
+              "raw": "{{gateway}}/api/job-applications/seed?count=10001",
+              "host": [
+                "{{gateway}}"
+              ],
+              "path": [
+                "api",
+                "job-applications",
+                "seed"
+              ],
+              "query": [
+                {
+                  "key": "count",
+                  "value": "10001"
+                }
+              ]
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"400 Bad Request\", () => pm.response.to.have.status(400));",
+                  "pm.test(\"message: count must be between 1 and 10000\", () => pm.expect(pm.response.json().message).to.include(\"count must be between 1 and 10000\"));"
+                ]
+              }
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "name": "4. job-tracker direct",
+      "description": "Endpoints that only job-tracker exposes.\nWebSocket: open a Postman WebSocket tab to ws://localhost:8080/ws/messages?login=dima, then send \"Send message\" with login \"dima\" — the text arrives in that tab.",
+      "item": [
+        {
+          "name": "Get by id (Redis-cached)",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{tracker}}/api/job-applications/{{createdId}}",
+              "host": [
+                "{{tracker}}"
+              ],
+              "path": [
+                "api",
+                "job-applications",
+                "{{createdId}}"
+              ]
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"200 OK\", () => pm.response.to.have.status(200));",
+                  "pm.test(\"same application as via gateway\", () => pm.expect(pm.response.json().id).to.eql(Number(pm.collectionVariables.get(\"createdId\"))));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Random value",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{tracker}}/api/random",
+              "host": [
+                "{{tracker}}"
+              ],
+              "path": [
+                "api",
+                "random"
+              ]
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"200 OK\", () => pm.response.to.have.status(200));",
+                  "pm.test(\"has r and generatedAt\", () => { const b = pm.response.json(); pm.expect(b.r).to.be.a(\"number\"); pm.expect(b.generatedAt).to.be.a(\"string\"); });",
+                  "pm.collectionVariables.set(\"randomValue\", JSON.stringify(pm.response.json()));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Random value again (cached for 20s)",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{tracker}}/api/random",
+              "host": [
+                "{{tracker}}"
+              ],
+              "path": [
+                "api",
+                "random"
+              ]
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"200 OK\", () => pm.response.to.have.status(200));",
+                  "pm.test(\"same cached value\", () => pm.expect(pm.response.json()).to.eql(JSON.parse(pm.collectionVariables.get(\"randomValue\"))));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Send message",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{tracker}}/api/messages",
+              "host": [
+                "{{tracker}}"
+              ],
+              "path": [
+                "api",
+                "messages"
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"login\": \"dima\",\n  \"message\": \"Hello from Postman\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"202 Accepted\", () => pm.response.to.have.status(202));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Send message: blank login",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{tracker}}/api/messages",
+              "host": [
+                "{{tracker}}"
+              ],
+              "path": [
+                "api",
+                "messages"
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"login\": \"\",\n  \"message\": \"x\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"400 Bad Request\", () => pm.response.to.have.status(400));"
+                ]
+              }
+            }
+          ]
+        }
+      ]
+    }
+  ],
+  "variable": [
+    {
+      "key": "runTag",
+      "value": ""
+    },
+    {
+      "key": "pastDate",
+      "value": ""
+    },
+    {
+      "key": "futureDate",
+      "value": ""
+    },
+    {
+      "key": "createdId",
+      "value": ""
+    },
+    {
+      "key": "totalBefore",
+      "value": ""
+    },
+    {
+      "key": "randomValue",
+      "value": ""
+    }
+  ]
+}
