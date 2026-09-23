@@ -1,6 +1,11 @@
 spring:
   application:
     name: job-tracker
+  web:
+    error:
+      # Expose the reason (e.g. "appliedDate cannot be in the future") and field errors to clients such as the UI
+      include-message: always
+      include-binding-errors: always
   datasource:
     url: jdbc:postgresql://localhost:5433/job_tracker
     username: postgres
