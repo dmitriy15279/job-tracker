@@ -54,3 +54,7 @@ Standard layered Spring MVC structure under `com.example.jobtracker`:
 - `persistence/` — Spring Data JPA repositories (`JpaRepository` interfaces); `persistence/entity/` holds `@Entity` classes using Lombok (`@Getter`/`@Setter`/`@NoArgsConstructor`/`@AllArgsConstructor`) instead of hand-written boilerplate.
 
 Request flow: `Controller` → `Service` (business logic + entity/DTO mapping) → `Repository` (JPA) → Postgres. This is a one-endpoint-group-at-a-time codebase currently covering only job applications (`/api/job-applications`); follow the same three-layer pattern (controller/dto, service, persistence/entity) when adding new resource types.
+
+### Related service: job-tracker-gateway
+
+Bulk seeding (`POST /api/job-applications/seed`) and the public paginated/filtered listing live in a separate project, `../job-tracker-gateway` (port 8081). It calls this service over HTTP via a Spring `@HttpExchange` interface (`JobApplicationClient`), so pagination and filtering still execute here at the DB level — keep the `GET /api/job-applications` query parameters and `PageResponse` shape in sync with the gateway's copies of the DTOs. `docker-compose up --build` starts it as the `gateway` service.
