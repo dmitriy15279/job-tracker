@@ -767,10 +767,237 @@
       ]
     },
     {
-      "name": "4. Delete (cleanup)",
+      "name": "4. Referral codes",
       "item": [
         {
-          "name": "Delete company B (Anna keeps A)",
+          "name": "Create referral code for company B",
+          "request": {
+            "method": "POST",
+            "header": [],
+            "url": {
+              "raw": "{{tracker}}/api/companies/{{companyBId}}/referral-codes",
+              "host": [
+                "{{tracker}}"
+              ],
+              "path": [
+                "api",
+                "companies",
+                "{{companyBId}}",
+                "referral-codes"
+              ]
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"Status 201\", () => pm.response.to.have.status(201));",
+                  "pm.collectionVariables.set(\"referralCode\", pm.response.json().code);"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Ivan joins company B by code",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{tracker}}/api/users/{{businessUserId}}/companies/join",
+              "host": [
+                "{{tracker}}"
+              ],
+              "path": [
+                "api",
+                "users",
+                "{{businessUserId}}",
+                "companies",
+                "join"
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"code\": \"{{referralCode}}\"\n}"
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"Status 200\", () => pm.response.to.have.status(200));",
+                  "pm.test(\"Ivan is now in company B\", () => pm.expect(pm.response.json().companies.map(c => c.id)).to.include(pm.collectionVariables.get(\"companyBId\")));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "409 - Ivan joins again",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{tracker}}/api/users/{{businessUserId}}/companies/join",
+              "host": [
+                "{{tracker}}"
+              ],
+              "path": [
+                "api",
+                "users",
+                "{{businessUserId}}",
+                "companies",
+                "join"
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"code\": \"{{referralCode}}\"\n}"
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"Status 409\", () => pm.response.to.have.status(409));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "409 - INDIVIDUAL cannot join",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{tracker}}/api/users/{{individualUserId}}/companies/join",
+              "host": [
+                "{{tracker}}"
+              ],
+              "path": [
+                "api",
+                "users",
+                "{{individualUserId}}",
+                "companies",
+                "join"
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"code\": \"{{referralCode}}\"\n}"
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"Status 409\", () => pm.response.to.have.status(409));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "404 - unknown code",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{tracker}}/api/users/{{businessUserId}}/companies/join",
+              "host": [
+                "{{tracker}}"
+              ],
+              "path": [
+                "api",
+                "users",
+                "{{businessUserId}}",
+                "companies",
+                "join"
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"code\": \"ZZZZZZZZ\"\n}"
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"Status 404\", () => pm.response.to.have.status(404));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "404 - code for unknown company",
+          "request": {
+            "method": "POST",
+            "header": [],
+            "url": {
+              "raw": "{{tracker}}/api/companies/00000000-0000-0000-0000-000000000000/referral-codes",
+              "host": [
+                "{{tracker}}"
+              ],
+              "path": [
+                "api",
+                "companies",
+                "00000000-0000-0000-0000-000000000000",
+                "referral-codes"
+              ]
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"Status 404\", () => pm.response.to.have.status(404));"
+                ]
+              }
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "name": "5. Delete (cleanup)",
+      "item": [
+        {
+          "name": "Delete company B",
           "request": {
             "method": "DELETE",
             "header": [],

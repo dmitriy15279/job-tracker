@@ -1,9 +1,11 @@
 package com.example.jobtracker.controller;
 
 import com.example.jobtracker.controller.dto.CreateUserRequest;
+import com.example.jobtracker.controller.dto.JoinCompanyRequest;
 import com.example.jobtracker.controller.dto.PageResponse;
 import com.example.jobtracker.controller.dto.UserResponse;
 import com.example.jobtracker.persistence.entity.UserType;
+import com.example.jobtracker.service.ReferralService;
 import com.example.jobtracker.service.UserService;
 import jakarta.validation.Valid;
 import java.net.URI;
@@ -27,9 +29,11 @@ import org.springframework.web.bind.annotation.RestController;
 public class UserController {
 
     private final UserService service;
+    private final ReferralService referralService;
 
-    public UserController(UserService service) {
+    public UserController(UserService service, ReferralService referralService) {
         this.service = service;
+        this.referralService = referralService;
     }
 
     @PostMapping
@@ -67,5 +71,11 @@ public class UserController {
         log.info("DELETE /api/users/{}", id);
         service.delete(id);
         return ResponseEntity.noContent().build();
+    }
+
+    @PostMapping("/{id}/companies/join")
+    public UserResponse joinCompany(@PathVariable UUID id, @Valid @RequestBody JoinCompanyRequest request) {
+        log.info("POST /api/users/{}/companies/join", id);
+        return referralService.join(id, request.code());
     }
 }

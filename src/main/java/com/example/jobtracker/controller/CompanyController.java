@@ -3,11 +3,14 @@ package com.example.jobtracker.controller;
 import com.example.jobtracker.controller.dto.CompanyResponse;
 import com.example.jobtracker.controller.dto.CreateCompanyRequest;
 import com.example.jobtracker.controller.dto.PageResponse;
+import com.example.jobtracker.controller.dto.ReferralCodeResponse;
 import com.example.jobtracker.service.CompanyService;
+import com.example.jobtracker.service.ReferralService;
 import jakarta.validation.Valid;
 import java.net.URI;
 import java.util.UUID;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
@@ -24,9 +27,11 @@ import org.springframework.web.bind.annotation.RestController;
 public class CompanyController {
 
     private final CompanyService service;
+    private final ReferralService referralService;
 
-    public CompanyController(CompanyService service) {
+    public CompanyController(CompanyService service, ReferralService referralService) {
         this.service = service;
+        this.referralService = referralService;
     }
 
     @PostMapping
@@ -56,5 +61,11 @@ public class CompanyController {
         log.info("DELETE /api/companies/{}", id);
         service.delete(id);
         return ResponseEntity.noContent().build();
+    }
+
+    @PostMapping("/{id}/referral-codes")
+    public ResponseEntity<ReferralCodeResponse> createReferralCode(@PathVariable UUID id) {
+        log.info("POST /api/companies/{}/referral-codes", id);
+        return ResponseEntity.status(HttpStatus.CREATED).body(referralService.generate(id));
     }
 }

@@ -44,3 +44,11 @@ logging:
     com.example.jobtracker: DEBUG
     org.springframework.cache: TRACE
     org.springframework.data.redis: DEBUG
+
+referral:
+  # Where referral codes live: redis (removed by Redis key TTL) | database (removed by the cleanup cron job)
+  storage: ${REFERRAL_STORAGE:redis}
+  ttl: ${REFERRAL_TTL:24h}
+  code-length: 8
+  # Only used with storage=database
+  cleanup-cron: ${REFERRAL_CLEANUP_CRON:0 */5 * * * *}

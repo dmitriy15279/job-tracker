@@ -101,7 +101,7 @@ public class UserService {
                 firstName, lastName, email, userType, birthDateFrom, birthDateTo, companyId);
         Page<UserResponse> result = repository
                 .findAll(spec, PageRequest.of(page, size, Sort.by(Sort.Direction.DESC, "createdAt")))
-                .map(this::toResponse);
+                .map(UserService::toResponse);
         log.debug("Fetched page {} of {} ({} total users) with filters firstName='{}', lastName='{}', email='{}', "
                         + "userType={}, birthDateFrom={}, birthDateTo={}, companyId={}",
                 result.getNumber(), result.getTotalPages(), result.getTotalElements(),
@@ -128,7 +128,7 @@ public class UserService {
                 });
     }
 
-    private UserResponse toResponse(User user) {
+    static UserResponse toResponse(User user) {
         List<CompanyResponse> companies = user.getCompanies().stream()
                 .sorted(Comparator.comparing(Company::getName))
                 .map(CompanyService::toResponse)

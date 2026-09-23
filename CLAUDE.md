@@ -59,6 +59,15 @@ Request flow: `Controller` → `Service` (business logic + entity/DTO mapping) �
 
 `User` ↔ `Company` is many-to-many through the `user_companies` join table (`User` owns the `@ManyToMany`; `Company` has no back-reference). Business rules enforced in the services, not the DB: a `BUSINESS` user must have at least one company, an `INDIVIDUAL` user none; a company that is some business user's only company cannot be deleted (409). User email and company name are unique case-insensitively (`lower(...)` unique indexes). Users and companies are not linked to job applications. Neither resource is exposed through the gateway yet.
 
+### Referral codes
+
+An existing user joins a company by code: `POST /api/companies/{id}/referral-codes` issues a random code (`ReferralCodeGenerator`, `SecureRandom`), `POST /api/users/{id}/companies/join` redeems it. Codes are reusable until they expire; `INDIVIDUAL` users cannot join (409). Storage is selected by `referral.storage` in `application.yml` (env `REFERRAL_STORAGE`, restart required) — exactly one `ReferralCodeStore` bean exists, chosen via `@ConditionalOnProperty`:
+
+- `redis` — `RedisReferralCodeStore`: key `referral:code:{CODE}` → companyId, `SET NX EX`, Redis TTL does the expiry.
+- `database` — `DatabaseReferralCodeStore`: `referral_codes` table (V5; created regardless of mode), insert via `ON CONFLICT DO NOTHING`; `ReferralCodeCleanupJob` deletes expired rows on `referral.cleanup-cron`, and lookups also filter on `expires_at` since cleanup lags.
+
+Codes are not migrated when switching modes.
+
 ### Related service: job-tracker-gateway
 
 Bulk seeding (`POST /api/job-applications/seed`), the public paginated/filtered listing and the web UI (static `index.html`/`app.js`) live in a separate project, `../job-tracker-gateway` (port 8081); this service has no UI of its own. It calls this service over HTTP via a Spring `@HttpExchange` interface (`JobApplicationClient`), so pagination and filtering still execute here at the DB level — keep the `GET /api/job-applications` query parameters and `PageResponse` shape in sync with the gateway's copies of the DTOs. `docker-compose up --build` starts it as the `gateway` service.

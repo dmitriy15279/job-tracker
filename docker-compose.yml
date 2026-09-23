@@ -73,6 +73,7 @@ services:
       SPRING_DATA_REDIS_HOST: redis
       SPRING_DATA_REDIS_PORT: 6379
       KAFKA_BOOTSTRAP_SERVERS: kafka:29092
+      REFERRAL_STORAGE: ${REFERRAL_STORAGE:-redis}
     ports:
       - "8080:8080"
 
