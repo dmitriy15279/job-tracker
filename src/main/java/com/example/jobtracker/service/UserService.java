@@ -72,12 +72,10 @@ public class UserService {
                 email,
                 request.address() == null || request.address().isBlank() ? null : request.address().strip(),
                 request.userType(),
-                // Postgres TIMESTAMP keeps microseconds; truncate so the create response matches later reads
                 LocalDateTime.now(clock).truncatedTo(ChronoUnit.MICROS),
                 companies);
         User saved;
         try {
-            // Flush now so a concurrent insert of the same email hits the unique index here, not at commit
             saved = repository.saveAndFlush(user);
         } catch (DataIntegrityViolationException e) {
             throw duplicateEmail(email);

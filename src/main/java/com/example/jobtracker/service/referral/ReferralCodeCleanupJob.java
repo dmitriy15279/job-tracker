@@ -8,10 +8,7 @@ import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Component;
 
-/**
- * Deletes expired referral codes from the database. Only exists with referral.storage=database.
- * Safe to run on several instances at once: the delete is idempotent.
- */
+
 @Slf4j
 @Component
 @ConditionalOnProperty(name = "referral.storage", havingValue = "database")

@@ -48,7 +48,6 @@ public class ReferralService {
             try {
                 saved = store.saveIfAbsent(code, companyId, createdAt, properties.ttl());
             } catch (DataIntegrityViolationException e) {
-                // Database storage only: the company was deleted between the check above and the insert
                 throw companyNotFound(companyId);
             }
             if (saved) {
@@ -68,7 +67,7 @@ public class ReferralService {
                         "Referral code is invalid or expired"));
         User user = userRepository.findById(userId)
                 .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "User " + userId + " not found"));
-        // A Redis code can outlive its company, so the company is checked separately
+
         Company company = companyRepository.findById(companyId).orElseThrow(() -> companyNotFound(companyId));
 
         if (user.getUserType() == UserType.INDIVIDUAL) {
@@ -79,7 +78,6 @@ public class ReferralService {
         }
         user.getCompanies().add(company);
         try {
-            // Flush now so a concurrent join of the same user hits the join table's primary key here
             userRepository.flush();
         } catch (DataIntegrityViolationException e) {
             throw alreadyMember(userId, companyId);

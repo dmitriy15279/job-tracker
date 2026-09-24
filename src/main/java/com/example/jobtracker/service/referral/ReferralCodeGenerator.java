@@ -7,7 +7,6 @@ import org.springframework.stereotype.Component;
 @Component
 public class ReferralCodeGenerator {
 
-    // No 0/O and 1/I so codes can be read out and typed without mistakes
     private static final String ALPHABET = "ABCDEFGHJKLMNPQRSTUVWXYZ23456789";
 
     private final SecureRandom random = new SecureRandom();

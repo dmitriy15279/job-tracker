@@ -36,7 +36,7 @@ public class CompanyService {
         }
         Company saved;
         try {
-            // Flush now so a concurrent insert of the same name hits the unique index here, not at commit
+
             saved = repository.saveAndFlush(new Company(null, name));
         } catch (DataIntegrityViolationException e) {
             throw duplicateName(name);
@@ -71,7 +71,7 @@ public class CompanyService {
             throw new ResponseStatusException(HttpStatus.CONFLICT,
                     "Company " + id + " is the only company of a business user and cannot be deleted");
         }
-        // Rows in user_companies are removed by ON DELETE CASCADE
+
         repository.delete(company);
         log.info("Deleted company {}", id);
     }

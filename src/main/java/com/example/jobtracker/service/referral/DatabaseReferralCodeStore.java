@@ -10,9 +10,7 @@ import lombok.extern.slf4j.Slf4j;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.stereotype.Component;
 
-/**
- * Keeps codes in the referral_codes table; {@link ReferralCodeCleanupJob} deletes expired rows on a cron schedule.
- */
+
 @Slf4j
 @Component
 @ConditionalOnProperty(name = "referral.storage", havingValue = "database")
@@ -34,7 +32,6 @@ public class DatabaseReferralCodeStore implements ReferralCodeStore {
 
     @Override
     public Optional<UUID> findCompanyId(String code) {
-        // Filter by expiry too: the cleanup job only runs periodically, so expired rows may still be present
         return repository.findActiveCompanyId(code, LocalDateTime.now(clock));
     }
 }

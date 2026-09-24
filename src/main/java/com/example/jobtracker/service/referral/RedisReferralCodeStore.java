@@ -9,9 +9,7 @@ import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.data.redis.core.StringRedisTemplate;
 import org.springframework.stereotype.Component;
 
-/**
- * Keeps each code as a Redis key with a TTL; Redis removes expired codes on its own.
- */
+
 @Slf4j
 @Component
 @ConditionalOnProperty(name = "referral.storage", havingValue = "redis")
@@ -28,7 +26,6 @@ public class RedisReferralCodeStore implements ReferralCodeStore {
 
     @Override
     public boolean saveIfAbsent(String code, UUID companyId, LocalDateTime createdAt, Duration ttl) {
-        // SET key value NX EX ttl - atomic, so two concurrent writers can't both claim the same code
         return Boolean.TRUE.equals(
                 redisTemplate.opsForValue().setIfAbsent(KEY_PREFIX + code, companyId.toString(), ttl));
     }
