@@ -9,6 +9,8 @@ import com.example.jobtracker.service.ReferralService;
 import jakarta.validation.Valid;
 import java.net.URI;
 import java.util.UUID;
+
+import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
@@ -23,16 +25,12 @@ import org.springframework.web.bind.annotation.RestController;
 
 @Slf4j
 @RestController
+@RequiredArgsConstructor
 @RequestMapping("/api/companies")
 public class CompanyController {
 
     private final CompanyService service;
     private final ReferralService referralService;
-
-    public CompanyController(CompanyService service, ReferralService referralService) {
-        this.service = service;
-        this.referralService = referralService;
-    }
 
     @PostMapping
     public ResponseEntity<CompanyResponse> create(@Valid @RequestBody CreateCompanyRequest request) {
