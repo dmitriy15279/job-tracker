@@ -36,7 +36,6 @@ public class CompanyService {
         }
         Company saved;
         try {
-
             saved = repository.saveAndFlush(new Company(null, name));
         } catch (DataIntegrityViolationException e) {
             throw duplicateName(name);
@@ -71,7 +70,6 @@ public class CompanyService {
             throw new ResponseStatusException(HttpStatus.CONFLICT,
                     "Company " + id + " is the only company of a business user and cannot be deleted");
         }
-
         repository.delete(company);
         log.info("Deleted company {}", id);
     }

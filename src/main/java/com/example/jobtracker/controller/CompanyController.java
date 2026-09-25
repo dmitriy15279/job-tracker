@@ -36,7 +36,7 @@ public class CompanyController {
     public ResponseEntity<CompanyResponse> create(@Valid @RequestBody CreateCompanyRequest request) {
         log.info("POST /api/companies name='{}'", request.name());
         CompanyResponse response = service.create(request);
-        return ResponseEntity.created(URI.create("/api/companies/" + response.id())).body(response);
+        return ResponseEntity.ok().body(response);
     }
 
     @GetMapping

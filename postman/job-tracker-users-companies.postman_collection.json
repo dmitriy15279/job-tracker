@@ -184,7 +184,7 @@
       "name": "2. Users",
       "item": [
         {
-          "name": "Create BUSINESS user (company A)",
+          "name": "Create BUSINESS user Ivan",
           "request": {
             "method": "POST",
             "header": [
@@ -205,7 +205,7 @@
             },
             "body": {
               "mode": "raw",
-              "raw": "{\n  \"firstName\": \"Иван\",\n  \"lastName\": \"Петров\",\n  \"birthDate\": \"1990-05-12\",\n  \"email\": \"{{businessEmail}}\",\n  \"address\": \"Москва, ул. Ленина, 1\",\n  \"userType\": \"BUSINESS\",\n  \"companyIds\": [\n    \"{{companyAId}}\"\n  ]\n}"
+              "raw": "{\n  \"firstName\": \"Иван\",\n  \"lastName\": \"Петров\",\n  \"birthDate\": \"1990-05-12\",\n  \"email\": \"{{businessEmail}}\",\n  \"address\": \"Москва, ул. Ленина, 1\",\n  \"userType\": \"BUSINESS\"\n}"
             }
           },
           "event": [
@@ -224,6 +224,7 @@
                 "type": "text/javascript",
                 "exec": [
                   "pm.test(\"Status 201\", () => pm.response.to.have.status(201));",
+                  "pm.test(\"Created without companies\", () => pm.expect(pm.response.json().companies).to.eql([]));",
                   "pm.collectionVariables.set(\"businessUserId\", pm.response.json().id);"
                 ]
               }
@@ -231,7 +232,7 @@
           ]
         },
         {
-          "name": "Create BUSINESS user (A + B)",
+          "name": "Create BUSINESS user Anna",
           "request": {
             "method": "POST",
             "header": [
@@ -252,7 +253,7 @@
             },
             "body": {
               "mode": "raw",
-              "raw": "{\n  \"firstName\": \"Анна\",\n  \"lastName\": \"Смирнова\",\n  \"birthDate\": \"1985-01-01\",\n  \"email\": \"{{business2Email}}\",\n  \"userType\": \"BUSINESS\",\n  \"companyIds\": [\n    \"{{companyAId}}\",\n    \"{{companyBId}}\"\n  ]\n}"
+              "raw": "{\n  \"firstName\": \"Анна\",\n  \"lastName\": \"Смирнова\",\n  \"birthDate\": \"1985-01-01\",\n  \"email\": \"{{business2Email}}\",\n  \"userType\": \"BUSINESS\"\n}"
             }
           },
           "event": [
@@ -271,6 +272,7 @@
                 "type": "text/javascript",
                 "exec": [
                   "pm.test(\"Status 201\", () => pm.response.to.have.status(201));",
+                  "pm.test(\"Created without companies\", () => pm.expect(pm.response.json().companies).to.eql([]));",
                   "pm.collectionVariables.set(\"business2UserId\", pm.response.json().id);"
                 ]
               }
@@ -318,7 +320,193 @@
                 "type": "text/javascript",
                 "exec": [
                   "pm.test(\"Status 201\", () => pm.response.to.have.status(201));",
+                  "pm.test(\"Created without companies\", () => pm.expect(pm.response.json().companies).to.eql([]));",
                   "pm.collectionVariables.set(\"individualUserId\", pm.response.json().id);"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Create referral code for company A",
+          "request": {
+            "method": "POST",
+            "header": [],
+            "url": {
+              "raw": "{{tracker}}/api/companies/{{companyAId}}/referral-codes",
+              "host": [
+                "{{tracker}}"
+              ],
+              "path": [
+                "api",
+                "companies",
+                "{{companyAId}}",
+                "referral-codes"
+              ]
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"Status 201\", () => pm.response.to.have.status(201));",
+                  "pm.collectionVariables.set(\"referralCodeA\", pm.response.json().code);"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Create referral code for company B",
+          "request": {
+            "method": "POST",
+            "header": [],
+            "url": {
+              "raw": "{{tracker}}/api/companies/{{companyBId}}/referral-codes",
+              "host": [
+                "{{tracker}}"
+              ],
+              "path": [
+                "api",
+                "companies",
+                "{{companyBId}}",
+                "referral-codes"
+              ]
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"Status 201\", () => pm.response.to.have.status(201));",
+                  "pm.collectionVariables.set(\"referralCodeB\", pm.response.json().code);"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Ivan joins company A by code",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{tracker}}/api/users/{{businessUserId}}/companies/join",
+              "host": [
+                "{{tracker}}"
+              ],
+              "path": [
+                "api",
+                "users",
+                "{{businessUserId}}",
+                "companies",
+                "join"
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"code\": \"{{referralCodeA}}\"\n}"
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"Status 200\", () => pm.response.to.have.status(200));",
+                  "pm.test(\"Ivan is now in company A\", () => pm.expect(pm.response.json().companies.map(c => c.id)).to.include(pm.collectionVariables.get(\"companyAId\")));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Anna joins company A by code",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{tracker}}/api/users/{{business2UserId}}/companies/join",
+              "host": [
+                "{{tracker}}"
+              ],
+              "path": [
+                "api",
+                "users",
+                "{{business2UserId}}",
+                "companies",
+                "join"
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"code\": \"{{referralCodeA}}\"\n}"
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"Status 200\", () => pm.response.to.have.status(200));",
+                  "pm.test(\"Anna is now in company A\", () => pm.expect(pm.response.json().companies.map(c => c.id)).to.include(pm.collectionVariables.get(\"companyAId\")));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Anna joins company B by code",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{tracker}}/api/users/{{business2UserId}}/companies/join",
+              "host": [
+                "{{tracker}}"
+              ],
+              "path": [
+                "api",
+                "users",
+                "{{business2UserId}}",
+                "companies",
+                "join"
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"code\": \"{{referralCodeB}}\"\n}"
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"Status 200\", () => pm.response.to.have.status(200));",
+                  "pm.test(\"Anna is now in company B\", () => pm.expect(pm.response.json().companies.map(c => c.id)).to.include(pm.collectionVariables.get(\"companyBId\")));"
                 ]
               }
             }
@@ -455,117 +643,6 @@
     {
       "name": "3. Error cases",
       "item": [
-        {
-          "name": "400 - BUSINESS without companies",
-          "request": {
-            "method": "POST",
-            "header": [
-              {
-                "key": "Content-Type",
-                "value": "application/json"
-              }
-            ],
-            "url": {
-              "raw": "{{tracker}}/api/users",
-              "host": [
-                "{{tracker}}"
-              ],
-              "path": [
-                "api",
-                "users"
-              ]
-            },
-            "body": {
-              "mode": "raw",
-              "raw": "{\n  \"firstName\": \"X\",\n  \"lastName\": \"Y\",\n  \"birthDate\": \"1990-01-01\",\n  \"email\": \"no.company@example.com\",\n  \"userType\": \"BUSINESS\"\n}"
-            }
-          },
-          "event": [
-            {
-              "listen": "test",
-              "script": {
-                "type": "text/javascript",
-                "exec": [
-                  "pm.test(\"Status 400\", () => pm.response.to.have.status(400));"
-                ]
-              }
-            }
-          ]
-        },
-        {
-          "name": "400 - INDIVIDUAL with companies",
-          "request": {
-            "method": "POST",
-            "header": [
-              {
-                "key": "Content-Type",
-                "value": "application/json"
-              }
-            ],
-            "url": {
-              "raw": "{{tracker}}/api/users",
-              "host": [
-                "{{tracker}}"
-              ],
-              "path": [
-                "api",
-                "users"
-              ]
-            },
-            "body": {
-              "mode": "raw",
-              "raw": "{\n  \"firstName\": \"X\",\n  \"lastName\": \"Y\",\n  \"birthDate\": \"1990-01-01\",\n  \"email\": \"ind.company@example.com\",\n  \"userType\": \"INDIVIDUAL\",\n  \"companyIds\": [\n    \"{{companyAId}}\"\n  ]\n}"
-            }
-          },
-          "event": [
-            {
-              "listen": "test",
-              "script": {
-                "type": "text/javascript",
-                "exec": [
-                  "pm.test(\"Status 400\", () => pm.response.to.have.status(400));"
-                ]
-              }
-            }
-          ]
-        },
-        {
-          "name": "400 - unknown companyId",
-          "request": {
-            "method": "POST",
-            "header": [
-              {
-                "key": "Content-Type",
-                "value": "application/json"
-              }
-            ],
-            "url": {
-              "raw": "{{tracker}}/api/users",
-              "host": [
-                "{{tracker}}"
-              ],
-              "path": [
-                "api",
-                "users"
-              ]
-            },
-            "body": {
-              "mode": "raw",
-              "raw": "{\n  \"firstName\": \"X\",\n  \"lastName\": \"Y\",\n  \"birthDate\": \"1990-01-01\",\n  \"email\": \"unknown.company@example.com\",\n  \"userType\": \"BUSINESS\",\n  \"companyIds\": [\n    \"00000000-0000-0000-0000-000000000000\"\n  ]\n}"
-            }
-          },
-          "event": [
-            {
-              "listen": "test",
-              "script": {
-                "type": "text/javascript",
-                "exec": [
-                  "pm.test(\"Status 400\", () => pm.response.to.have.status(400));"
-                ]
-              }
-            }
-          ]
-        },
         {
           "name": "400 - validation (future birthDate, bad email)",
           "request": {

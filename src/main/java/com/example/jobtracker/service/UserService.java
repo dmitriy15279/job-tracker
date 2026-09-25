@@ -4,7 +4,6 @@ import com.example.jobtracker.controller.dto.CompanyResponse;
 import com.example.jobtracker.controller.dto.CreateUserRequest;
 import com.example.jobtracker.controller.dto.PageResponse;
 import com.example.jobtracker.controller.dto.UserResponse;
-import com.example.jobtracker.persistence.CompanyRepository;
 import com.example.jobtracker.persistence.UserRepository;
 import com.example.jobtracker.persistence.UserSpecifications;
 import com.example.jobtracker.persistence.entity.Company;
@@ -18,9 +17,7 @@ import java.util.Comparator;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Locale;
-import java.util.Set;
 import java.util.UUID;
-import java.util.stream.Collectors;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.dao.DataIntegrityViolationException;
@@ -41,7 +38,6 @@ public class UserService {
     private static final int MAX_PAGE_SIZE = 100;
 
     private final UserRepository repository;
-    private final CompanyRepository companyRepository;
     private final Clock clock;
 
     @Transactional
@@ -49,19 +45,6 @@ public class UserService {
         String email = request.email().strip().toLowerCase(Locale.ROOT);
         if (repository.existsByEmailIgnoreCase(email)) {
             throw duplicateEmail(email);
-        }
-        Set<UUID> companyIds = request.companyIds() == null ? Set.of() : request.companyIds();
-        if (request.userType() == UserType.BUSINESS && companyIds.isEmpty()) {
-            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "business user must have at least one company");
-        }
-        if (request.userType() == UserType.INDIVIDUAL && !companyIds.isEmpty()) {
-            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "individual user cannot have companies");
-        }
-        Set<Company> companies = new HashSet<>(companyRepository.findAllById(companyIds));
-        if (companies.size() != companyIds.size()) {
-            Set<UUID> foundIds = companies.stream().map(Company::getId).collect(Collectors.toSet());
-            List<UUID> missing = companyIds.stream().filter(id -> !foundIds.contains(id)).toList();
-            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Companies not found: " + missing);
         }
 
         User user = new User(
@@ -73,14 +56,10 @@ public class UserService {
                 request.address() == null || request.address().isBlank() ? null : request.address().strip(),
                 request.userType(),
                 LocalDateTime.now(clock).truncatedTo(ChronoUnit.MICROS),
-                companies);
-        User saved;
-        try {
-            saved = repository.saveAndFlush(user);
-        } catch (DataIntegrityViolationException e) {
-            throw duplicateEmail(email);
-        }
-        log.info("Created {} user {} with {} companies", saved.getUserType(), saved.getId(), companies.size());
+                new HashSet<>());
+
+        User saved = repository.save(user);
+        log.info("Created {} user {}", saved.getUserType(), saved.getId());
         return toResponse(saved);
     }
 

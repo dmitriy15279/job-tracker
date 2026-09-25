@@ -57,7 +57,7 @@ Request flow: `Controller` → `Service` (business logic + entity/DTO mapping) �
 
 ### Users and companies
 
-`User` ↔ `Company` is many-to-many through the `user_companies` join table (`User` owns the `@ManyToMany`; `Company` has no back-reference). Business rules enforced in the services, not the DB: a `BUSINESS` user must have at least one company, an `INDIVIDUAL` user none; a company that is some business user's only company cannot be deleted (409). User email and company name are unique case-insensitively (`lower(...)` unique indexes). Users and companies are not linked to job applications. Neither resource is exposed through the gateway yet.
+`User` ↔ `Company` is many-to-many through the `user_companies` join table (`User` owns the `@ManyToMany`; `Company` has no back-reference). Business rules enforced in the services, not the DB: users are created without companies (`BUSINESS` users get them afterwards via referral codes, see below), an `INDIVIDUAL` user never has any; a company that is some business user's only company cannot be deleted (409). User email and company name are unique case-insensitively (`lower(...)` unique indexes). Users and companies are not linked to job applications. Neither resource is exposed through the gateway yet.
 
 ### Referral codes
 
