@@ -38,6 +38,7 @@ public class UserService {
     private static final int MAX_PAGE_SIZE = 100;
 
     private final UserRepository repository;
+    private final AvatarService avatarService;
     private final Clock clock;
 
     @Transactional
@@ -93,7 +94,9 @@ public class UserService {
 
     @Transactional
     public void delete(UUID id) {
-        repository.delete(findOrThrow(id));
+        User user = findOrThrow(id);
+        avatarService.deleteFilesOfUser(id);
+        repository.delete(user);
         log.info("Deleted user {}", id);
     }
 

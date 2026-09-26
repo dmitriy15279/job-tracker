@@ -32,7 +32,7 @@ Build tool is Gradle (via wrapper — use `gradlew`/`gradlew.bat`, not a system-
 The app expects PostgreSQL reachable at the URL in `src/main/resources/application.yml` (`localhost:5433/job_tracker`). It also expects Redis reachable at `localhost:6380` (used to cache `GET /api/job-applications/{id}` lookups for 30 seconds — see `config/CacheConfig.java`). Start both with:
 
 ```bash
-docker-compose up -d db redis
+docker-compose up -d db redis minio
 ```
 
 Schema is managed exclusively through Flyway migrations in `src/main/resources/db/migration/` (`V1__...sql`, `V2__...sql`, ...). Hibernate DDL is set to `validate` (`spring.jpa.hibernate.ddl-auto=validate`) — it never auto-generates schema, so any entity change requires a corresponding new Flyway migration.
@@ -67,6 +67,10 @@ An existing user joins a company by code: `POST /api/companies/{id}/referral-cod
 - `database` — `DatabaseReferralCodeStore`: `referral_codes` table (V5; created regardless of mode), insert via `ON CONFLICT DO NOTHING`; `ReferralCodeCleanupJob` deletes expired rows on `referral.cleanup-cron`, and lookups also filter on `expires_at` since cleanup lags.
 
 Codes are not migrated when switching modes.
+
+### User avatars
+
+`PUT /api/users/{id}/avatar` (multipart, part `file`) uploads an avatar, `GET` returns temporary presigned links to MinIO (the bytes never go through this service), `DELETE` removes it. Limits: 5 MB (`spring.servlet.multipart.max-file-size`), JPEG/PNG/WebP only (detected from file content by ImageIO; WebP via TwelveMonkeys), max 4096 px per side. `AvatarImageProcessor` makes a 256×256 center-cropped thumbnail (Thumbnailator). Files live in MinIO (bucket `avatars`, created on startup, fixed keys `avatars/{userId}/original` and `avatars/{userId}/thumbnail`, so a new upload overwrites the old files; `AvatarStorage` is a plain class, no interface), metadata in the `user_avatars` table (V6). `avatar.s3.endpoint` is used for uploads, `avatar.s3.public-endpoint` for building client links (the host is part of the signature).
 
 ### Related service: job-tracker-gateway
 

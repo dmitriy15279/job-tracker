@@ -1,6 +1,10 @@
 spring:
   application:
     name: job-tracker
+  servlet:
+    multipart:
+      max-file-size: 5MB
+      max-request-size: 6MB
   web:
     error:
       # Expose the reason (e.g. "appliedDate cannot be in the future") and field errors to clients such as the UI
@@ -38,6 +42,10 @@ spring:
     listener:
       observation-enabled: true
 
+server:
+  tomcat:
+    max-swallow-size: 10MB
+
 logging:
   level:
     root: INFO
@@ -52,3 +60,15 @@ referral:
   code-length: 8
   # Only used with storage=database
   cleanup-cron: ${REFERRAL_CLEANUP_CRON:0 */5 * * * *}
+
+avatar:
+  max-dimension: 4096
+  thumbnail-size: 256
+  url-ttl: ${AVATAR_URL_TTL:15m}
+  s3:
+    endpoint: ${AVATAR_S3_ENDPOINT:http://localhost:9000}
+    public-endpoint: ${AVATAR_S3_PUBLIC_ENDPOINT:http://localhost:9000}
+    region: us-east-1
+    access-key: ${AVATAR_S3_ACCESS_KEY:minioadmin}
+    secret-key: ${AVATAR_S3_SECRET_KEY:minioadmin}
+    bucket: ${AVATAR_S3_BUCKET:avatars}
